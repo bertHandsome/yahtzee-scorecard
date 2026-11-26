@@ -133,29 +133,30 @@ const App = () => {
     const newScores = JSON.parse(JSON.stringify(scores));
     const gameScores = newScores[gameId];
 
-    switch (category) {
-      case 'fullHouse':
-        newScore = gameScores.fullHouse.checked ? null : 25;
-        newChecked = !gameScores.fullHouse.checked;
-        break;
-      case 'smallStraight':
-        newScore = gameScores.smallStraight.checked ? null : 30;
-        newChecked = !gameScores.smallStraight.checked;
-        break;
-      case 'largeStraight':
-        newScore = gameScores.largeStraight.checked ? null : 40;
-        newChecked = !gameScores.largeStraight.checked;
-        break;
-      case 'yahtzee':
-        newScore = gameScores.yahtzee.checked ? null : 50;
-        newChecked = !gameScores.yahtzee.checked;
-        break;
-      case 'yahtzeeBonus':
-        const currentCount = gameScores.yahtzeeBonus.checked;
-        const newCount = currentCount + 1;
-        newChecked = newCount;
-        newScore = newCount * 100;
-        break;
+    const categoryPoints = {
+      fullHouse: 25,
+      smallStraight: 30,
+      largeStraight: 40,
+      yahtzee: 50,
+    };
+
+    if (category === 'yahtzeeBonus') {
+      const currentCount = gameScores.yahtzeeBonus.checked;
+      const newCount = currentCount + 1;
+      newChecked = newCount;
+      newScore = newCount * 100;
+    } else if (category in categoryPoints) {
+      const current = gameScores[category];
+      if (current.score === null) {
+        newScore = categoryPoints[category];
+        newChecked = true;
+      } else if (current.score > 0) {
+        newScore = 0;
+        newChecked = false;
+      } else {
+        newScore = null;
+        newChecked = false;
+      }
     }
 
     gameScores[category] = { score: newScore, checked: newChecked };
@@ -258,6 +259,7 @@ const App = () => {
   const buttonClasses = isDarkMode ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300';
   const checkmarkButtonClasses = "p-1 rounded-full shadow-sm focus:outline-none transition-all duration-200 ease-in-out";
   const checkedClasses = "bg-green-500 text-white hover:bg-green-600";
+  const zeroClasses = "bg-red-500 text-white hover:bg-red-600";
   const uncheckedClasses = isDarkMode ? "bg-gray-600 text-gray-300 hover:bg-gray-500" : "bg-gray-200 text-gray-500 hover:bg-gray-300";
 
   const renderScoreRow = (label, renderScoreField, isSubtotal = false, isTotal = false) => {
@@ -295,14 +297,17 @@ const App = () => {
     const score = scoreState.score;
     const isChecked = typeof scoreState.checked === 'number' ? scoreState.checked > 0 : scoreState.checked;
     const isYahtzeeBonus = category === 'yahtzeeBonus';
+    const isZero = !isYahtzeeBonus && score === 0;
     const bonusCount = isYahtzeeBonus ? scoreState.checked : 0;
+
+    const stateClasses = isChecked ? checkedClasses : isZero ? zeroClasses : uncheckedClasses;
 
     return (
       <div className="flex items-center justify-center space-x-2">
         <span className="font-mono text-sm">{score !== null ? score : '-'}</span>
         <button
           onClick={() => handleToggleCheckmark(gameId, category)}
-          className={`${checkmarkButtonClasses} ${isChecked ? checkedClasses : uncheckedClasses} flex items-center justify-center`}
+          className={`${checkmarkButtonClasses} ${stateClasses} flex items-center justify-center`}
         >
           {isYahtzeeBonus ? (
             <span className="text-xl leading-none">
@@ -310,7 +315,7 @@ const App = () => {
             </span>
           ) : (
             <span className="text-xl leading-none">
-              {isChecked ? '✅' : '-'}
+              {isChecked ? '✅' : isZero ? '✕' : '-'}
             </span>
           )}
         </button>
